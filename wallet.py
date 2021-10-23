@@ -17,7 +17,7 @@ db = None
 
 loginPage = tk.Tk()
 loginPage.geometry("380x270")
-loginPage.title("Portfel haseł v0.3")
+loginPage.title("Portfel haseł b37")
 
 loginInfoLabel = tk.Label(loginPage, text="Logowanie").pack()
 loginLoginLabel = tk.Label(loginPage, text="Login").pack()
