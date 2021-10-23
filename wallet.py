@@ -17,7 +17,7 @@ db = None
 
 loginPage = tk.Tk()
 loginPage.geometry("380x270")
-loginPage.title("Portfel haseł b37")
+loginPage.title("Portfel haseł b38")
 
 loginInfoLabel = tk.Label(loginPage, text="Logowanie").pack()
 loginLoginLabel = tk.Label(loginPage, text="Login").pack()
@@ -50,16 +50,9 @@ def tryregister():
     if hashChoice.get() == 1:
         storage = '1'
         password = hl.sha512(password.encode('UTF-8')).hexdigest()
-        print(password)
-        print("nonce: ")
-        print(password.encode('UTF-8'))
         cipher = AES.new(binpepper, AES.MODE_EAX, nonce=password.encode('UTF-8'))
         password = cipher.encrypt(password.encode('UTF-8'))
-        print("zaszyfowany")
-        print(password)
         password = password.hex()
-        print("zaszyfrowany hex")
-        print(password)
     else:
         storage = '2'
         password = hmac.new(pepper.encode('UTF-8'), password.encode('UTF-8'), hl.sha512).hexdigest()
@@ -84,7 +77,6 @@ def trylogin():
     if res:
         salt = res[0][3]
         password = password + salt
-        print("pass+salt: " + password)
         if res[0][4] == hashChoice.get():
             if hashChoice.get() == 1:
                 hashpassword = hl.sha512(password.encode('UTF-8')).hexdigest()
