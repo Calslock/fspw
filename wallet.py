@@ -2,11 +2,25 @@ import tkinter as tk
 import hashlib as hl
 import hmac
 from Crypto.Cipher import AES
+import mysql.connector as conn
+from _mysql_connector import MySQLInterfaceError
 
-pepper = "70f2a64df3aa17f5833b85c9508b23266b783b15b6562c80e4c5e92dd176b1e0"
+pepper = hl.sha256(b"VewwySecretKey").hexdigest()
+dbhost = "localhost"
+dbuser = "root"
+
+#def tryRegister():
+
 
 loginPage = tk.Tk()
-loginPage.title("Portfel haseł v0.1")
+loginPage.title("Portfel haseł v0.2")
+
+try:
+    db = conn.connect(host=dbhost, user=dbuser)
+    connectLabel = tk.Label(loginPage, text="Połączono z bazą danych", fg="green").pack()
+except (MySQLInterfaceError, conn.errors.DatabaseError):
+    connectLabel = tk.Label(loginPage, text="Nie udało się połączyć z bazą danych", fg="red").pack()
+
 loginInfoLabel = tk.Label(loginPage, text="Logowanie").pack()
 loginLoginLabel = tk.Label(loginPage, text="Login").pack()
 loginLoginInput = tk.Entry(loginPage).pack()
@@ -19,6 +33,7 @@ hashLabel = tk.Label(loginPage, text="Sposób hashowania").pack()
 hashSHAradio = tk.Radiobutton(loginPage, text="AES", variable=hashChoice, value=1).pack()
 hashHMACradio = tk.Radiobutton(loginPage, text="HMAC", variable=hashChoice, value=2).pack()
 
-
+loginButton = tk.Button(loginPage, text="Zaloguj").pack()
+loginRegisterButton = tk.Button(loginPage, text="Zarejestruj").pack()
 
 tk.mainloop()
