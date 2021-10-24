@@ -17,7 +17,7 @@ db = None
 
 loginPage = tk.Tk()
 loginPage.geometry("380x270")
-loginPage.title("Portfel haseł b58")
+loginPage.title("Portfel haseł b113")
 
 loginInfoLabel = tk.Label(loginPage, text="Logowanie").pack()
 loginLoginLabel = tk.Label(loginPage, text="Login").pack()
@@ -54,12 +54,20 @@ def hashhmac(password):
 
 
 def encrypt(password, masterkey):
-    # AES encrypt here
-    print("encrypt")
+    print("encrypting")
+    hash = hl.md5(masterkey.encode('UTF-8')).digest()
+    cipher = AES.new(hash, AES.MODE_EAX, nonce=masterkey.encode('UTF-8'))
+    encrypted = cipher.encrypt(password.encode('UTF-8'))
+    return encrypted
 
 
-def decrypt(password, masterkey):
-    print("decrypt")
+def decrypt(encpassword, masterkey):
+    print("decrypting")
+    hash = hl.md5(masterkey.encode('UTF-8')).digest()
+    cipher = AES.new(hash, AES.MODE_EAX, nonce=masterkey.encode('UTF-8'))
+    decrypted = cipher.decrypt(encpassword)
+    decrypted = decrypted.decode('UTF-8')
+    return decrypted
 
 
 def changepassword():
@@ -91,12 +99,62 @@ def vault(userid, username, masterkey, salt):
         vaultPage.destroy()
         loginPage.destroy()
 
-    dataFrame = tk.LabelFrame(vaultPage, text="Zalogowano", fg="green")
-    tk.Label(dataFrame, text="Zalogowano jako: " + username + " (" + str(userid) + ")").pack()
-    dataFrame.pack(fill="x")
+    def addPassword():
 
-    passwordFrame = tk.LabelFrame(vaultPage, text="Hasła")
-    passwordFrame.pack()
+        addPasswordWindow = tk.Toplevel(vaultPage)
+        addPasswordWindow.title("Dodaj hasło")
+        #addPasswordWindow.geometry("350x100")
+        addPasswordWindow.columnconfigure(0, weight=1)
+        addPasswordWindow.columnconfigure(1, weight=10)
+
+        tk.Label(addPasswordWindow, text="Dodaj hasło: ", anchor="w").grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        miniNfo = tk.Label(addPasswordWindow, anchor="e")
+        miniNfo.grid(column=1, row=0, sticky=tk.E, padx=5, pady=5)
+        tk.Label(addPasswordWindow, text="Nazwa (wymagana): ", anchor="w").grid(column=0, row=1, sticky=tk.W, padx=5,
+                                                                                pady=5)
+        tk.Label(addPasswordWindow, text="Strona: ", anchor="w").grid(column=0, row=2, sticky=tk.W, padx=5,
+                                                                                pady=5)
+        tk.Label(addPasswordWindow, text="Hasło:", anchor="w").grid(column=0, row=3, sticky=tk.W, padx=5,
+                                                                                pady=5)
+
+        addPassName = tk.Entry(addPasswordWindow)
+        addPassName.grid(column=1, row=1, padx=5, pady=5)
+        addPassSite = tk.Entry(addPasswordWindow)
+        addPassSite.grid(column=1, row=2, padx=5, pady=5)
+        addPassPass = tk.Entry(addPasswordWindow, show='\u2022')
+        addPassPass.grid(column=1, row=3, padx=5, pady=5)
+
+        def addPassToDatabase():
+            websiteExists = True
+            name = addPassName.get()
+            if len(name) < 3:
+                showInfo(miniNfo, "Nazwa musi mieć co najmniej 3 znaki!", "red")
+                return None
+            website = addPassSite.get()
+            if len(website) == 0:
+                websiteExists = False
+            password = addPassPass.get()
+            if len(password) == 0:
+                showInfo(miniNfo, "Musisz wpisać hasło!", "red")
+                return None
+            encrypted = encrypt(password, masterkey)
+            db.cursor()
+            if websiteExists:
+                cursor.execute("INSERT INTO `vault` (`id`, `userid`, `name`, `website`, `password`) VALUES (NULL, '" + str(userid) + "', '" + name + "' , '" + website + "', 0x" + encrypted.hex() + "); ")
+            else:
+                cursor.execute("INSERT INTO `vault` (`id`, `userid`, `name`, `website`, `password`) VALUES (NULL, '" + str(userid) + "', '" + name + "' , NULL, 0x" + encrypted.hex() + "); ")
+            dec = decrypt(encrypted, masterkey)
+            print(dec)
+
+        def close():
+            addPasswordWindow.destroy()
+
+        addPassConfirm = tk.Button(addPasswordWindow, text="Dodaj", command=addPassToDatabase)
+        addPassConfirm.grid(column=0, row=4, sticky=tk.W, padx=5, pady=5)
+        addPassCancel = tk.Button(addPasswordWindow, text="Anuluj", command=close)
+        addPassCancel.grid(column=1, row=4, sticky=tk.E, padx=5, pady=5)
+
+        print("dodaj haslo")
 
     vaultMenu = tk.Menu(vaultPage)
     logoutSubmenu = tk.Menu(vaultMenu, tearoff=False)
@@ -105,6 +163,22 @@ def vault(userid, username, masterkey, salt):
     vaultMenu.add_cascade(label="Wyloguj", menu=logoutSubmenu)
     vaultMenu.add_command(label="Zmień hasło", command=changepassword)
     vaultPage.config(menu=vaultMenu)
+
+    dataFrame = tk.LabelFrame(vaultPage, text="Zalogowano", fg="green")
+    tk.Label(dataFrame, text="Zalogowano jako: " + username + " (" + str(userid) + ")").pack()
+    dataFrame.pack(fill="x")
+
+    passwordFrame = tk.LabelFrame(vaultPage, text="Hasła")
+    passwordFrame.pack(fill="both")
+
+    scrollBar = tk.Scrollbar(passwordFrame)
+    scrollBar.pack(side="right", fill="y")
+
+    addPasswordButton = tk.Button(passwordFrame, text="Dodaj hasło", command=addPassword)
+    addPasswordButton.pack()
+
+    cursor = db.cursor()
+    #cursor.execute("SELECT * FROM `vault` WHERE `")
 
 
 def createsalt(length):
