@@ -6,6 +6,7 @@ from Crypto.Cipher import AES
 import mysql.connector as conn
 import random
 import string
+import webbrowser
 
 
 class ScrollableFrame(tk.LabelFrame):
@@ -36,7 +37,7 @@ db = None
 
 login_page = tk.Tk()
 login_page.geometry("380x270")
-login_page.title("Portfel haseł b273")
+login_page.title("Portfel haseł b278")
 
 login_info_label = tk.Label(login_page, text="Logowanie").pack()
 login_login_label = tk.Label(login_page, text="Login").pack()
@@ -206,8 +207,10 @@ def vault(userid, username, masterkey):
         for entry in passwords:
             pass_frame = tk.LabelFrame(password_frame.scrollable_frame, text=entry[2])
             pass_frame.pack(fill="x")
-            website_label = tk.Label(pass_frame, text=entry[3])
+            website_label = tk.Label(pass_frame, text=entry[3], fg="blue", cursor="hand2")
             website_label.pack()
+            website_label.bind("<Button-1>", lambda website_labell=website_label, entry=entry[3]:
+                               webbrowser.open_new("http://" + entry))
 
             pass_box_frame = tk.Frame(pass_frame)
             pass_box_frame.grid_columnconfigure(0, weight=6)
