@@ -37,6 +37,7 @@ binpepper = pepper.digest()
 pepper = pepper.hexdigest()
 dbhost = "localhost"
 dbuser = "root"
+dbpassword = ""
 dbdatabase = "fspw"
 db = None
 
@@ -137,13 +138,14 @@ def vault(userid, username, masterkey):
         add_password_window.columnconfigure(1, weight=10)
 
         tk.Label(add_password_window, text="Add password: ", anchor="w").grid(column=0, row=0, sticky=tk.W, padx=5,
-                                                                             pady=5)
+                                                                              pady=5)
         mini_nfo = tk.Label(add_password_window, anchor="e")
         mini_nfo.grid(column=1, row=0, sticky=tk.E, padx=5, pady=5)
         tk.Label(add_password_window, text="Name (required): ", anchor="w").grid(column=0, row=1, sticky=tk.W, padx=5,
-                                                                                  pady=5)
+                                                                                 pady=5)
         tk.Label(add_password_window, text="Website: ", anchor="w").grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
-        tk.Label(add_password_window, text="Password (required):", anchor="w").grid(column=0, row=3, sticky=tk.W, padx=5, pady=5)
+        tk.Label(add_password_window, text="Password (required):", anchor="w").grid(column=0, row=3, sticky=tk.W,
+                                                                                    padx=5, pady=5)
 
         add_pass_name = tk.Entry(add_password_window)
         add_pass_name.grid(column=1, row=1, padx=5, pady=5)
@@ -370,7 +372,7 @@ def trylogin():
 
 
 try:
-    db = conn.connect(host=dbhost, user=dbuser, database=dbdatabase)
+    db = conn.connect(host=dbhost, user=dbuser, password=dbpassword, database=dbdatabase)
     db.autocommit = True
     connectLabel = tk.Label(login_page, text="Connected with MySQL database", fg="green").pack()
     loginButton = tk.Button(login_page, text="Sign in", command=trylogin).pack()
