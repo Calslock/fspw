@@ -37,7 +37,7 @@ db = None
 
 login_page = tk.Tk()
 login_page.geometry("380x270")
-login_page.title("Portfel haseł b279")
+login_page.title("Portfel haseł b284")
 
 login_info_label = tk.Label(login_page, text="Logowanie").pack()
 login_login_label = tk.Label(login_page, text="Login").pack()
@@ -198,6 +198,28 @@ def vault(userid, username, masterkey):
     password_frame.pack()
     password_frame.scrollable_frame.config(text="Hasła")
 
+    def remove_password(passid: int, namel: str):
+        remove_password_window = tk.Toplevel(vault_page)
+        remove_password_window.title("Usuń hasło")
+        button_frame = tk.LabelFrame(remove_password_window, text="Czy na pewno chcesz usunąć hasło: "+namel, fg="red")
+        button_frame.pack(fill="x")
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+
+        def close():
+            remove_password_window.destroy()
+
+        def confirm():
+            cursor = db.cursor()
+            cursor.execute("DELETE FROM `vault` WHERE `vault`.`id` = " + str(passid))
+            refresh()
+            close()
+
+        confirm_button = tk.Button(button_frame, text="Potwierdź", command=confirm)
+        confirm_button.grid(column=0, row=0, padx=5, pady=5, sticky=tk.W)
+        cancel_button = tk.Button(button_frame, text="Anuluj", command=close)
+        cancel_button.grid(column=1, row=0, padx=5, pady=5, sticky=tk.E)
+
     def refresh():
         for child in password_frame.scrollable_frame.winfo_children():
             child.destroy()
@@ -207,24 +229,30 @@ def vault(userid, username, masterkey):
         for entry in passwords:
             pass_frame = tk.LabelFrame(password_frame.scrollable_frame, text=entry[2])
             pass_frame.pack(fill="x")
-            website_label = tk.Label(pass_frame, text=entry[3], fg="blue", cursor="hand2")
-            website_label.pack()
-            website_label.bind("<Button-1>", lambda website_labell=website_label, entryl=entry[3]:
-                               webbrowser.open_new("http://" + entryl))
 
             pass_box_frame = tk.Frame(pass_frame)
             pass_box_frame.grid_columnconfigure(0, weight=6)
             pass_box_frame.grid_columnconfigure(1, weight=1)
             pass_box_frame.pack(fill="x")
 
+            website_label = tk.Label(pass_box_frame, text=entry[3], fg="blue", cursor="hand2")
+            website_label.grid(column=0, row=0, padx=5, pady=5)
+            website_label.bind("<Button-1>", lambda website_labell=website_label, entryl=entry[3]:
+                               webbrowser.open_new("http://" + entryl))
+
+            remove_button = tk.Button(pass_box_frame, text="Usuń", command=lambda idl=entry[0], namel=entry[2]:
+                                      remove_password(idl, namel))
+            remove_button.grid(column=1, row=0, padx=5, pady=5)
+
             pass_box = tk.Entry(pass_box_frame, width=42)
             encryptedpass = bytes(entry[4])
             pass_box.insert(0, encryptedpass.hex())
-            pass_box.grid(column=0, row=0, padx=5, pady=5)
+            pass_box.grid(column=0, row=1, padx=5, pady=5)
+
             decrypt_button = tk.Button(pass_box_frame, text="Pokaż/ukryj",
                                        command=lambda pass_boxl=pass_box, encryptedpassl=encryptedpass:
                                        get_input_and_decrypt(pass_boxl, encryptedpassl, masterkey))
-            decrypt_button.grid(column=1, row=0, padx=5, pady=5)
+            decrypt_button.grid(column=1, row=1, padx=5, pady=5)
 
     refresh()
 
