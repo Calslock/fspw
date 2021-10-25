@@ -1,7 +1,12 @@
+# python3
+# (c) 2021 Karol Buchajczuk (admin@calslock.net) on GPLv3 and AGPLv3 where applicable
+# requires tk
 import tkinter as tk
 import hashlib as hl
 import hmac
+# requires mysql-connector-python
 import _mysql_connector
+# requires pycryptodome
 from Crypto.Cipher import AES
 import mysql.connector as conn
 import random
@@ -37,19 +42,19 @@ db = None
 
 login_page = tk.Tk()
 login_page.geometry("380x270")
-login_page.title("Portfel haseł b284")
+login_page.title("fspw b289")
 
-login_info_label = tk.Label(login_page, text="Logowanie").pack()
+login_info_label = tk.Label(login_page, text="Sign in").pack()
 login_login_label = tk.Label(login_page, text="Login").pack()
 login_login_input = tk.Entry(login_page)
 login_login_input.pack()
-login_pass_label = tk.Label(login_page, text="Hasło").pack()
+login_pass_label = tk.Label(login_page, text="Password").pack()
 login_pass_input = tk.Entry(login_page, show='\u2022')
 login_pass_input.pack()
 
 hash_choice = tk.IntVar()
 hash_choice.set(1)
-hash_label = tk.Label(login_page, text="Sposób przechowywania hasła").pack()
+hash_label = tk.Label(login_page, text="DB hashing mode").pack()
 hash_sha_radio = tk.Radiobutton(login_page, text="SHA+AES", variable=hash_choice, value=1).pack()
 hash_hmac_radio = tk.Radiobutton(login_page, text="HMAC", variable=hash_choice, value=2).pack()
 
@@ -98,14 +103,14 @@ def get_input_and_decrypt(entry: tk.Entry, passwordarg, masterkey):
         entry.insert(0, passhex)
 
 
-def change_password():
-    print("zmiana")
+def close(widget: tk.Toplevel):
+    widget.destroy()
 
 
 def vault(userid, username, masterkey):
     vault_page = tk.Tk()
-    vault_page.geometry("380x270")
-    vault_page.title("Zalogowano jako: " + username)
+    vault_page.geometry("380x300")
+    vault_page.title("Logged as: " + username)
     login_page.withdraw()
 
     def closeprogram():
@@ -127,18 +132,18 @@ def vault(userid, username, masterkey):
 
     def add_password():
         add_password_window = tk.Toplevel(vault_page)
-        add_password_window.title("Dodaj hasło")
+        add_password_window.title("Add password to vault")
         add_password_window.columnconfigure(0, weight=1)
         add_password_window.columnconfigure(1, weight=10)
 
-        tk.Label(add_password_window, text="Dodaj hasło: ", anchor="w").grid(column=0, row=0, sticky=tk.W, padx=5,
+        tk.Label(add_password_window, text="Add password: ", anchor="w").grid(column=0, row=0, sticky=tk.W, padx=5,
                                                                              pady=5)
         mini_nfo = tk.Label(add_password_window, anchor="e")
         mini_nfo.grid(column=1, row=0, sticky=tk.E, padx=5, pady=5)
-        tk.Label(add_password_window, text="Nazwa (wymagana): ", anchor="w").grid(column=0, row=1, sticky=tk.W, padx=5,
+        tk.Label(add_password_window, text="Name (required): ", anchor="w").grid(column=0, row=1, sticky=tk.W, padx=5,
                                                                                   pady=5)
-        tk.Label(add_password_window, text="Strona: ", anchor="w").grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
-        tk.Label(add_password_window, text="Hasło:", anchor="w").grid(column=0, row=3, sticky=tk.W, padx=5, pady=5)
+        tk.Label(add_password_window, text="Website: ", anchor="w").grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
+        tk.Label(add_password_window, text="Password (required):", anchor="w").grid(column=0, row=3, sticky=tk.W, padx=5, pady=5)
 
         add_pass_name = tk.Entry(add_password_window)
         add_pass_name.grid(column=1, row=1, padx=5, pady=5)
@@ -151,14 +156,14 @@ def vault(userid, username, masterkey):
             website_exists = True
             name = add_pass_name.get()
             if len(name) < 3:
-                show_info(mini_nfo, "Nazwa musi mieć co najmniej 3 znaki!", "red")
+                show_info(mini_nfo, "Name must be at least 3 characters long!", "red")
                 return None
             website = add_pass_site.get()
             if len(website) == 0:
                 website_exists = False
             password = add_pass_pass.get()
             if len(password) == 0:
-                show_info(mini_nfo, "Musisz wpisać hasło!", "red")
+                show_info(mini_nfo, "Password cannot be empty!", "red")
                 return None
             encrypted = encrypt(password, masterkey)
             cursor = db.cursor()
@@ -169,56 +174,95 @@ def vault(userid, username, masterkey):
                 cursor.execute("INSERT INTO `vault` (`id`, `userid`, `name`, `website`, `password`) VALUES (NULL, '" +
                                str(userid) + "', '" + name + "' , NULL, 0x" + encrypted.hex() + "); ")
             refresh()
-            add_password_window.destroy()
+            close(add_password_window)
 
-        def close():
-            add_password_window.destroy()
-
-        add_pass_confirm = tk.Button(add_password_window, text="Dodaj", command=add_pass_to_database)
+        add_pass_confirm = tk.Button(add_password_window, text="Confirm", command=add_pass_to_database)
         add_pass_confirm.grid(column=0, row=4, sticky=tk.W, padx=5, pady=5)
-        add_pass_cancel = tk.Button(add_password_window, text="Anuluj", command=close)
+        add_pass_cancel = tk.Button(add_password_window, text="Cancel", command=lambda: close(add_password_window))
         add_pass_cancel.grid(column=1, row=4, sticky=tk.E, padx=5, pady=5)
 
-    vault_menu = tk.Menu(vault_page)
-    logout_submenu = tk.Menu(vault_menu, tearoff=False)
-    logout_submenu.add_command(label="Wyloguj", command=logout)
-    logout_submenu.add_command(label="Wyloguj i wyjdź", command=logoutandclose)
-    vault_menu.add_cascade(label="Wyloguj", menu=logout_submenu)
-    vault_menu.add_command(label="Zmień hasło", command=change_password)
-    vault_page.config(menu=vault_menu)
-
-    data_frame = tk.LabelFrame(vault_page, text="Zalogowano", fg="green")
-    tk.Label(data_frame, text="Zalogowano jako: " + username + " (" + str(userid) + ")").pack()
+    data_frame = tk.LabelFrame(vault_page, text="fspw b289", fg="green")
+    tk.Label(data_frame, text="Signed as: " + username + " (" + str(userid) + ")").pack()
     data_frame.pack(fill="x")
 
-    add_password_button = tk.Button(vault_page, text="Dodaj hasło", command=add_password)
+    add_password_button = tk.Button(vault_page, text="Add password to vault", command=add_password)
     add_password_button.pack()
 
     password_frame = ScrollableFrame(vault_page)
     password_frame.pack()
-    password_frame.scrollable_frame.config(text="Hasła")
+    password_frame.scrollable_frame.config(text="Passwords")
 
-    def remove_password(passid: int, namel: str):
+    def remove_password(passid: int, passname: str):
         remove_password_window = tk.Toplevel(vault_page)
-        remove_password_window.title("Usuń hasło")
-        button_frame = tk.LabelFrame(remove_password_window, text="Czy na pewno chcesz usunąć hasło: "+namel, fg="red")
+        remove_password_window.title("Delete password")
+        button_frame = tk.LabelFrame(remove_password_window, text="Are you sure you want to remove: " + passname + "?",
+                                     fg="red")
         button_frame.pack(fill="x")
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
-
-        def close():
-            remove_password_window.destroy()
 
         def confirm():
             cursor = db.cursor()
             cursor.execute("DELETE FROM `vault` WHERE `vault`.`id` = " + str(passid))
             refresh()
-            close()
+            close(remove_password_window)
 
-        confirm_button = tk.Button(button_frame, text="Potwierdź", command=confirm)
+        confirm_button = tk.Button(button_frame, text="Confirm", command=confirm)
         confirm_button.grid(column=0, row=0, padx=5, pady=5, sticky=tk.W)
-        cancel_button = tk.Button(button_frame, text="Anuluj", command=close)
+        cancel_button = tk.Button(button_frame, text="Cancel", command=lambda: close(remove_password_window))
         cancel_button.grid(column=1, row=0, padx=5, pady=5, sticky=tk.E)
+
+    def change_password():
+        change_password_window = tk.Toplevel(vault_page)
+        change_password_window.title("Change password")
+
+        cp_frame = tk.LabelFrame(change_password_window, text="Changing password for: " + username, fg="red")
+        cp_frame.pack(fill="x")
+        cp_frame.grid_columnconfigure(0, weight=1)
+        cp_frame.grid_columnconfigure(1, weight=1)
+
+        tk.Label(cp_frame, text="New password:").grid(column=0, row=0, padx=5, pady=5, sticky=tk.W)
+        tk.Label(cp_frame, text="Repeat new password:").grid(column=0, row=1, padx=5, pady=5, sticky=tk.W)
+
+        newpass = tk.Entry(cp_frame, show='\u2022')
+        newpass.grid(column=1, row=0, padx=5, pady=5, sticky=tk.E)
+        confnewpass = tk.Entry(cp_frame, show='\u2022')
+        confnewpass.grid(column=1, row=1, padx=5, pady=5, sticky=tk.E)
+        newsalt = createsalt(16)
+
+        def confirm():
+            if newpass.get() == confnewpass.get() and len(newpass.get()) != 0 and len(newpass.get()) >= 8:
+                cursor = db.cursor()
+                confpass = newpass.get()
+                confpasssalt = confpass + newsalt
+                newhash = hash_and_encrypt(confpasssalt)
+                cursor.execute("UPDATE `users` SET `password_hash` = '" + newhash + "', `salt` = '" + newsalt +
+                               "' WHERE `users`.`id` = " + str(userid))
+                cursor = db.cursor()
+                cursor.execute("SELECT * FROM `vault` WHERE `userid` = '" + str(userid) + "'")
+                passwords = cursor.fetchall()
+                for entry in passwords:
+                    passid = entry[0]
+                    encryptedpass = bytes(entry[4])
+                    decryptedpass = decrypt(encryptedpass, masterkey)
+                    encryptedagain = encrypt(decryptedpass, confpass)
+                    cursor.execute("UPDATE `vault` SET `password` = 0x" + encryptedagain.hex() +
+                                   " WHERE `vault`.`id` = " + str(passid))
+                close(change_password_window)
+                logout()
+                show_info(infoBox, "Password changed successfully!", "green")
+
+            elif len(newpass.get()) == 0:
+                cp_frame.config(text="Password cannot be empty!")
+            elif len(newpass.get()) < 8:
+                cp_frame.config(text="Password is too short!")
+            else:
+                cp_frame.config(text="Passwords aren't exact!")
+
+        confirm_button = tk.Button(cp_frame, text="Confirm", command=confirm)
+        confirm_button.grid(column=0, row=2, padx=5, pady=5, sticky=tk.W)
+        cancel_button = tk.Button(cp_frame, text="Cancel", command=lambda: close(change_password_window))
+        cancel_button.grid(column=1, row=2, padx=5, pady=5, sticky=tk.E)
 
     def refresh():
         for child in password_frame.scrollable_frame.winfo_children():
@@ -240,7 +284,7 @@ def vault(userid, username, masterkey):
             website_label.bind("<Button-1>", lambda website_labell=website_label, entryl=entry[3]:
                                webbrowser.open_new("http://" + entryl))
 
-            remove_button = tk.Button(pass_box_frame, text="Usuń", command=lambda idl=entry[0], namel=entry[2]:
+            remove_button = tk.Button(pass_box_frame, text="Delete", command=lambda idl=entry[0], namel=entry[2]:
                                       remove_password(idl, namel))
             remove_button.grid(column=1, row=0, padx=5, pady=5)
 
@@ -249,11 +293,18 @@ def vault(userid, username, masterkey):
             pass_box.insert(0, encryptedpass.hex())
             pass_box.grid(column=0, row=1, padx=5, pady=5)
 
-            decrypt_button = tk.Button(pass_box_frame, text="Pokaż/ukryj",
+            decrypt_button = tk.Button(pass_box_frame, text="Show/hide",
                                        command=lambda pass_boxl=pass_box, encryptedpassl=encryptedpass:
                                        get_input_and_decrypt(pass_boxl, encryptedpassl, masterkey))
             decrypt_button.grid(column=1, row=1, padx=5, pady=5)
 
+    vault_menu = tk.Menu(vault_page)
+    logout_submenu = tk.Menu(vault_menu, tearoff=False)
+    logout_submenu.add_command(label="Logout", command=logout)
+    logout_submenu.add_command(label="Logout and exit", command=logoutandclose)
+    vault_menu.add_cascade(label="Logout", menu=logout_submenu)
+    vault_menu.add_command(label="Change password", command=change_password)
+    vault_page.config(menu=vault_menu)
     refresh()
 
 
@@ -264,11 +315,11 @@ def createsalt(length):
 def tryregister():
     username = login_login_input.get()
     if len(username) < 3:
-        show_info(infoBox, "Nazwa użytkownika musi mieć co najmniej 3 znaki!", "red")
+        show_info(infoBox, "Username must be at least 3 characters long!", "red")
         return None
     password = login_pass_input.get()
     if len(password) < 8:
-        show_info(infoBox, "Hasło jest za krótkie (co najmniej 8 znaków)!", "red")
+        show_info(infoBox, "Password must be at least 8 characters long!", "red")
         return None
     salt = createsalt(16)
     password = password + salt
@@ -279,25 +330,25 @@ def tryregister():
         storage = '2'
         password = hash_hmac(password)
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM `users` WHERE `login` = '"+username+"'")
+    cursor.execute("SELECT * FROM `users` WHERE `login` = '" + username + "'")
     res = cursor.fetchall()
     if res:
-        show_info(infoBox, "Taki użytkownik już istnieje", "red")
+        show_info(infoBox, "User already exists!", "red")
     else:
         cursor.execute("INSERT INTO `users` (`id`, `login`, `password_hash`, `salt`, `storage`) VALUES (NULL, '" +
                        username + "', '" + password + "', '" + salt + "', '" + storage + "');")
-        show_info(infoBox, "Zarejestrowano! Możesz się teraz zalogować.", "green")
+        show_info(infoBox, "Success! You can now sign in.", "green")
 
 
 def trylogin():
     username = login_login_input.get()
     if len(username) < 3:
-        show_info(infoBox, "Nazwa użytkownika musi mieć co najmniej 3 znaki!", "red")
+        show_info(infoBox, "Username must be at least 3 characters long!", "red")
         return 0
     password = login_pass_input.get()
     masterkey = password
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM `users` WHERE `login` = '"+username+"'")
+    cursor.execute("SELECT * FROM `users` WHERE `login` = '" + username + "'")
     res = cursor.fetchall()
     if res:
         salt = res[0][3]
@@ -308,25 +359,25 @@ def trylogin():
             else:
                 password = hash_hmac(password)
             if password == res[0][2]:
-                show_info(infoBox, "Zalogowano!", "green")
+                show_info(infoBox, "Signed in!", "green")
                 vault(res[0][0], username, masterkey)
             else:
-                show_info(infoBox, "Nieprawidłowe hasło", "red")
+                show_info(infoBox, "Wrong password!", "red")
         else:
-            show_info(infoBox, "Nieprawidłowy algorytm przechowywania hasła dla tego konta", "red")
+            show_info(infoBox, "This account uses different hashing method!", "red")
     else:
-        show_info(infoBox, "Taki użytkownik nie istnieje!", "red")
+        show_info(infoBox, "User doesn't exist!", "red")
 
 
 try:
     db = conn.connect(host=dbhost, user=dbuser, database=dbdatabase)
     db.autocommit = True
-    connectLabel = tk.Label(login_page, text="Połączono z bazą danych", fg="green").pack()
-    loginButton = tk.Button(login_page, text="Zaloguj", command=trylogin).pack()
-    loginRegisterButton = tk.Button(login_page, text="Zarejestruj", command=tryregister).pack()
+    connectLabel = tk.Label(login_page, text="Connected with MySQL database", fg="green").pack()
+    loginButton = tk.Button(login_page, text="Sign in", command=trylogin).pack()
+    loginRegisterButton = tk.Button(login_page, text="Register", command=tryregister).pack()
     infoBox = tk.Frame(login_page)
     infoBox.pack(fill="x")
 except (_mysql_connector.MySQLInterfaceError, conn.errors.DatabaseError):
-    connectLabel = tk.Label(login_page, text="Nie udało się połączyć z bazą danych", fg="red").pack()
+    connectLabel = tk.Label(login_page, text="Couldn't connect to database", fg="red").pack()
 
 tk.mainloop()
