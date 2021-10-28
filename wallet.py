@@ -40,10 +40,11 @@ dbuser = "root"
 dbpassword = ""
 dbdatabase = "fspw"
 db = None
+version = "295"
 
 login_page = tk.Tk()
 login_page.geometry("380x270")
-login_page.title("fspw b289")
+login_page.title("fspw b"+version)
 
 login_info_label = tk.Label(login_page, text="Sign in").pack()
 login_login_label = tk.Label(login_page, text="Login").pack()
@@ -183,7 +184,7 @@ def vault(userid, username, masterkey):
         add_pass_cancel = tk.Button(add_password_window, text="Cancel", command=lambda: close(add_password_window))
         add_pass_cancel.grid(column=1, row=4, sticky=tk.E, padx=5, pady=5)
 
-    data_frame = tk.LabelFrame(vault_page, text="fspw b289", fg="green")
+    data_frame = tk.LabelFrame(vault_page, text="fspw b"+version, fg="green")
     tk.Label(data_frame, text="Signed as: " + username + " (" + str(userid) + ")").pack()
     data_frame.pack(fill="x")
 
@@ -223,17 +224,21 @@ def vault(userid, username, masterkey):
         cp_frame.grid_columnconfigure(0, weight=1)
         cp_frame.grid_columnconfigure(1, weight=1)
 
-        tk.Label(cp_frame, text="New password:").grid(column=0, row=0, padx=5, pady=5, sticky=tk.W)
-        tk.Label(cp_frame, text="Repeat new password:").grid(column=0, row=1, padx=5, pady=5, sticky=tk.W)
+        tk.Label(cp_frame, text="Old password:").grid(column=0, row=0, padx=5, pady=5, sticky=tk.W)
+        tk.Label(cp_frame, text="New password:").grid(column=0, row=1, padx=5, pady=5, sticky=tk.W)
+        tk.Label(cp_frame, text="Repeat new password:").grid(column=0, row=2, padx=5, pady=5, sticky=tk.W)
 
+        oldpass = tk.Entry(cp_frame, show='\u2022')
+        oldpass.grid(column=1, row=0, padx=5, pady=5, sticky=tk.E)
         newpass = tk.Entry(cp_frame, show='\u2022')
-        newpass.grid(column=1, row=0, padx=5, pady=5, sticky=tk.E)
+        newpass.grid(column=1, row=1, padx=5, pady=5, sticky=tk.E)
         confnewpass = tk.Entry(cp_frame, show='\u2022')
-        confnewpass.grid(column=1, row=1, padx=5, pady=5, sticky=tk.E)
+        confnewpass.grid(column=1, row=2, padx=5, pady=5, sticky=tk.E)
         newsalt = createsalt(16)
 
         def confirm():
-            if newpass.get() == confnewpass.get() and len(newpass.get()) != 0 and len(newpass.get()) >= 8:
+            if newpass.get() == confnewpass.get() and len(newpass.get()) != 0 and\
+                    len(newpass.get()) >= 8 and oldpass.get() == masterkey:
                 cursor = db.cursor()
                 confpass = newpass.get()
                 confpasssalt = confpass + newsalt
@@ -258,13 +263,15 @@ def vault(userid, username, masterkey):
                 cp_frame.config(text="Password cannot be empty!")
             elif len(newpass.get()) < 8:
                 cp_frame.config(text="Password is too short!")
+            elif masterkey != oldpass.get():
+                cp_frame.config(text="Wrong password!")
             else:
                 cp_frame.config(text="Passwords aren't exact!")
 
         confirm_button = tk.Button(cp_frame, text="Confirm", command=confirm)
-        confirm_button.grid(column=0, row=2, padx=5, pady=5, sticky=tk.W)
+        confirm_button.grid(column=0, row=3, padx=5, pady=5, sticky=tk.W)
         cancel_button = tk.Button(cp_frame, text="Cancel", command=lambda: close(change_password_window))
-        cancel_button.grid(column=1, row=2, padx=5, pady=5, sticky=tk.E)
+        cancel_button.grid(column=1, row=3, padx=5, pady=5, sticky=tk.E)
 
     def refresh():
         for child in password_frame.scrollable_frame.winfo_children():
